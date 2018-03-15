@@ -10,7 +10,7 @@ from edward.models import Normal
 ed.set_seed(42)
 
 def build_toy_dataset(x_train, y_train, N, pixel):
-  x = (1/255)*x_train[0:N]
+  x = x_train[0:N]
   x = tf.cast(x,tf.float32)
   x = tf.reshape(x,[N,pixel*pixel])
   y = y_train[0:N]
@@ -42,7 +42,7 @@ def neural_network(x, W_0, W_1, b_0, b_1):
 
 ed.set_seed(42)
 
-N = 2000  # number of images train
+N = 3000  # number of images train
 pixel = 28
 D = pixel*pixel   # number of features
 
@@ -50,9 +50,9 @@ D = pixel*pixel   # number of features
 
 x_train, y_train = build_toy_dataset(train_images,train_labels,N,pixel)
 
-W_0 = Normal(loc=tf.zeros([D, 3]), scale=tf.ones([D, 3]))
-W_1 = Normal(loc=tf.zeros([3, 1]), scale=tf.ones([3, 1]))
-b_0 = Normal(loc=tf.zeros(3), scale=tf.ones(3))
+W_0 = Normal(loc=tf.zeros([D, 5]), scale=tf.ones([D, 5]))
+W_1 = Normal(loc=tf.zeros([5, 1]), scale=tf.ones([5, 1]))
+b_0 = Normal(loc=tf.zeros(5), scale=tf.ones(5))
 b_1 = Normal(loc=tf.zeros(1), scale=tf.ones(1))
 
 x = x_train
@@ -60,12 +60,12 @@ x = x_train
 y = Normal(loc=neural_network(x, W_0, W_1, b_0, b_1),
            scale=0.1 * tf.ones(N))
 
-qW_0 = Normal(loc=tf.get_variable("qW_0/loc", [D, 3]),
-              scale=tf.nn.softplus(tf.get_variable("qW_0/scale", [D, 3])))
-qW_1 = Normal(loc=tf.get_variable("qW_1/loc", [3, 1]),
-              scale=tf.nn.softplus(tf.get_variable("qW_1/scale", [3, 1])))
-qb_0 = Normal(loc=tf.get_variable("qb_0/loc", [3]),
-              scale=tf.nn.softplus(tf.get_variable("qb_0/scale", [3])))
+qW_0 = Normal(loc=tf.get_variable("qW_0/loc", [D, 5]),
+              scale=tf.nn.softplus(tf.get_variable("qW_0/scale", [D, 5])))
+qW_1 = Normal(loc=tf.get_variable("qW_1/loc", [5, 1]),
+              scale=tf.nn.softplus(tf.get_variable("qW_1/scale", [5, 1])))
+qb_0 = Normal(loc=tf.get_variable("qb_0/loc", [5]),
+              scale=tf.nn.softplus(tf.get_variable("qb_0/scale", [5])))
 qb_1 = Normal(loc=tf.get_variable("qb_1/loc", [1]),
               scale=tf.nn.softplus(tf.get_variable("qb_1/scale", [1])))
 
@@ -75,7 +75,7 @@ inference.run(n_iter=1000, n_samples=5)
 
 # We use test data in order to test our neural network
 
-x = (1/255)*train_images[1]
+x = train_images[0]
 x = tf.cast(x,tf.float32)
 x = tf.reshape(x,[1,pixel*pixel])
 mus = tf.stack(
