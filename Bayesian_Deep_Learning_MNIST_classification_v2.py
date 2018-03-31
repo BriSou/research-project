@@ -17,11 +17,11 @@ import pandas as pd
 #Use the TensorFlow method to download and/or load the data.
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-N = 10   # number of images in a minibatch.
+N = 100   # number of images in a minibatch.
 D = 784   # number of features.
 K = 10    # number of classes.
 
-I = 10     # number we delete from train data set to discover the outcome.
+I = 8     # number we delete from train data set to discover the outcome.
 
 X_batch = np.array(np.zeros([N,D], dtype = np.float32))
 Y_batch = np.array(np.zeros([N], dtype = np.int32))
@@ -46,7 +46,7 @@ y_ph = tf.placeholder(tf.int32, [N])
 inference = ed.KLqp({w: qw, b: qb}, data={y:y_ph})
 
 # Initialse the infernce variables
-inference.initialize(n_iter=100, n_print=100, scale={y: float(mnist.train.num_examples) / N})
+inference.initialize(n_iter=1000, n_print=100, scale={y: float(mnist.train.num_examples) / N})
 
 # We will use an interactive session.
 sess = tf.InteractiveSession()
@@ -75,7 +75,7 @@ X_test = mnist.test.images[0:1000]
 Y_test = np.argmax(mnist.test.labels[0:1000],axis=1)
 
 # Generate samples the posterior and store them.
-n_samples = 1
+n_samples = 100
 prob_lst = []
 samples = []
 w_samples = []
@@ -86,14 +86,14 @@ for n in range(n_samples):
     w_samples.append(w_samp)
     b_samples.append(b_samp)
     # Also compue the probabiliy of each class for each   (w,b) sample.
-    prob = tf.nn.softmax(tf.matmul( X_test,w_samp ) + b_samp)
-    prob_lst.append(prob.eval())
+    #prob = tf.nn.softmax(tf.matmul( X_test,w_samp ) + b_samp)
+    #prob_lst.append(prob.eval())
     sample = tf.concat([tf.reshape(w_samp,[-1]),b_samp],0)
     samples.append(sample.eval())
     print(n)
     
 #Calibrage du modèle
-prob_fin = prob_lst[0]    
+prob_fin = np.mean(prob_lst,axis=0)    
 #result récupère les digits prédit ainsi que la probabilité
 #avec laquelle ils ont été prédits pour chaque image
 result = np.zeros([1,1000,2], dtype=np.float32)
@@ -121,6 +121,8 @@ calibrage_0_7 = (y_trn_prd_cali[indice_pred_0_7] == Y_test[indice_pred_0_7]).mea
 calibrage_0_8 = (y_trn_prd_cali[indice_pred_0_8] == Y_test[indice_pred_0_8]).mean()*100 
 calibrage_0_9 = (y_trn_prd_cali[indice_pred_0_9] == Y_test[indice_pred_0_9]).mean()*100     
 calibrage_1 = (y_trn_prd_cali[indice_pred_1] == Y_test[indice_pred_1]).mean()*100     
+
+
 # Compute the accuracy of the model.
 # For each sample we compute the predicted class and compare with the test labels.
 # Predicted class is defined as the one which as maximum proability.
@@ -144,8 +146,8 @@ print("accuracy in predicting the test data = ", (Y_pred == Y_test).mean()*100)
 
 
 # Load the first image from the test data and its label.
-indice = 0
-#indice = np.where(Y_test == I)[0][0]
+#indice = 2
+indice = np.where(Y_test == I)[0][0]
 test_label = Y_test[indice]
 test_image = X_test[indice]
 print('truth = ',test_label)
@@ -154,19 +156,19 @@ plt.imshow(pixels,cmap='Blues')
 plt.show()
 
 
-# Now the check what the model perdicts for each (w,b) sample from the posterior. This may take a few seconds...
-#sing_img_probs = []
-#n_samples = 0
-#for w_samp,b_samp in zip(w_samples,b_samples):
-#    prob = tf.nn.softmax(tf.matmul(X_test[indice:(indice+1)],w_samp ) + b_samp)
-#    sing_img_probs.append(prob.eval())
-#    print(n_samples)
-#    n_samples += 1
+#Now the check what the model perdicts for each (w,b) sample from the posterior. This may take a few seconds...
+sing_img_probs = []
+n_samples = 0
+for w_samp,b_samp in zip(w_samples,b_samples):
+    prob = tf.nn.softmax(tf.matmul(X_test[indice:(indice+1)],w_samp ) + b_samp)
+    sing_img_probs.append(prob.eval())
+    print(n_samples)
+    n_samples += 1
 
 #
-## Create a histogram of these predictions.
-#plt.hist(np.argmax(sing_img_probs,axis=2),bins=range(10))
-#plt.xticks(np.arange(0,10))
-#plt.xlim(0,10)
-#plt.xlabel("Accuracy of the prediction of the test digit")
-#plt.ylabel("Frequency")
+# Create a histogram of these predictions.
+plt.hist(np.argmax(sing_img_probs,axis=2),bins=range(10))
+plt.xticks(np.arange(0,10))
+plt.xlim(0,10)
+plt.xlabel("Accuracy of the prediction of the test digit")
+plt.ylabel("Frequency")
